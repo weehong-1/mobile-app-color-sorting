@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!--
+      The page is incapable of making a network request. Screenshots never leave
+      the device, and that is a property you can check here rather than a
+      promise you have to take on trust.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <title>Icon sorter</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="bar">
+      <h1>Icon sorter</h1>
+      <div class="bar-actions">
+        <label class="field inline">
+          <span>Theme</span>
+          <select id="theme">
+            <option value="system">Match system</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+      </div>
+    </header>
+
+    <main id="main">
+      <p class="lede">
+        Sort the app icons on a home screen screenshot by colour. Everything happens
+        in this tab &mdash; your screenshot is never uploaded anywhere.
+      </p>
+
+      <section class="step" aria-labelledby="step-upload">
+        <h2 id="step-upload">1. Choose a screenshot</h2>
+        <div id="drop" class="drop">
+          <label class="button" for="file">Choose a screenshot</label>
+          <input id="file" type="file" accept="image/png,image/jpeg,image/webp" />
+          <p class="hint">Or drag one here. A home screen screenshot from a phone works best.</p>
+        </div>
+        <p id="error" class="error" role="alert" hidden></p>
+      </section>
+
+      <section id="step-grid-section" class="step" aria-labelledby="step-grid" hidden>
+        <h2 id="step-grid">2. Check the grid</h2>
+        <p class="hint">
+          Orange squares are the icons that were found. Select a square to include or
+          exclude it. If the grid is off, adjust it below.
+        </p>
+        <div class="preview">
+          <div id="grid-cells" class="cells"></div>
+          <canvas id="grid-canvas"></canvas>
+        </div>
+        <p id="grid-summary" class="summary" aria-live="polite"></p>
+
+        <details id="manual">
+          <summary>Adjust the grid</summary>
+          <div class="controls">
+            <label class="field">
+              <span>Columns</span>
+              <select id="columns">
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+              </select>
+            </label>
+            <label class="field"><span>Left edge <output id="left-out"></output></span>
+              <input id="left" type="range" min="0" max="400" step="1" /></label>
+            <label class="field"><span>Top edge <output id="top-out"></output></span>
+              <input id="top" type="range" min="0" max="800" step="1" /></label>
+            <label class="field"><span>Icon size <output id="size-out"></output></span>
+              <input id="size" type="range" min="40" max="400" step="1" /></label>
+            <label class="field"><span>Column spacing <output id="colpitch-out"></output></span>
+              <input id="colpitch" type="range" min="40" max="600" step="1" /></label>
+            <label class="field"><span>Row spacing <output id="rowpitch-out"></output></span>
+              <input id="rowpitch" type="range" min="40" max="700" step="1" /></label>
+          </div>
+          <p class="hint">Moving a slider finds the icons again, which clears any squares you selected.</p>
+          <button id="reset-grid" type="button" class="button secondary">Reset to detected grid</button>
+        </details>
+      </section>
+
+      <section id="step-options-section" class="step" aria-labelledby="step-options" hidden>
+        <h2 id="step-options">3. Choose how to sort</h2>
+        <div class="controls">
+          <label class="field">
+            <span>Order</span>
+            <select id="sort-mode">
+              <option value="rainbow">Rainbow, grouped</option>
+              <option value="families">Colour families</option>
+              <option value="hue">Hue only</option>
+              <option value="dark-to-light">Dark to light</option>
+              <option value="light-to-dark">Light to dark</option>
+            </select>
+          </label>
+          <label class="field checkbox">
+            <input id="white-first" type="checkbox" />
+            <span>Put white icons first</span>
+          </label>
+          <label class="field">
+            <span>Dark icons below lightness <output id="dark-out"></output></span>
+            <input id="dark-threshold" type="range" min="0.1" max="0.6" step="0.01" />
+          </label>
+          <label class="field checkbox">
+            <input id="show-labels" type="checkbox" />
+            <span>Show app names</span>
+          </label>
+          <div class="field inline" id="label-colour-field" hidden>
+            <label for="label-colour">Name colour</label>
+            <input id="label-colour" type="color" />
+            <button id="label-colour-auto" type="button" class="button secondary">Auto</button>
+          </div>
+        </div>
+
+        <fieldset class="choices" id="palette-section" hidden>
+          <legend>Colour palette</legend>
+          <p class="hint">
+            Colours are grouped into families by hue, and each family runs pale to
+            deep. Only the families change the order; the steps name the colours.
+          </p>
+          <div id="palette-swatches" class="palette-grid"></div>
+          <label class="field" for="palette-text">
+            <span>Paste your own colours, one per line</span>
+            <textarea id="palette-text" rows="4" spellcheck="false"
+              placeholder="#1b4f9c Deep blue"></textarea>
+          </label>
+          <p id="palette-error" class="error" role="alert" hidden></p>
+          <div class="row">
+            <button id="palette-apply" type="button" class="button">Use these colours</button>
+            <button id="palette-reset" type="button" class="button secondary">Use the built-in palette</button>
+          </div>
+        </fieldset>
+
+        <fieldset class="choices">
+          <legend>Layout</legend>
+          <label class="field checkbox">
+            <input type="radio" name="layout" value="packed" />
+            <span>Packed into a block</span>
+          </label>
+          <label class="field checkbox">
+            <input type="radio" name="layout" value="original" />
+            <span>Keep original positions</span>
+          </label>
+          <label class="field checkbox">
+            <input type="radio" name="layout" value="within-rows" />
+            <span>Sort inside each row</span>
+          </label>
+        </fieldset>
+
+        <fieldset class="swatches">
+          <legend>Background</legend>
+          <div id="presets" class="preset-row"></div>
+          <label class="field inline">
+            <span>Custom</span>
+            <input id="background" type="color" />
+          </label>
+        </fieldset>
+      </section>
+
+      <section id="step-result-section" class="step" aria-labelledby="step-result" hidden>
+        <h2 id="step-result">4. Your sorted screen</h2>
+        <div class="segmented" role="group" aria-label="Show before or after">
+          <button id="show-before" type="button" aria-pressed="false">Before</button>
+          <button id="show-after" type="button" aria-pressed="true">After</button>
+        </div>
+        <figure class="result">
+          <img id="result-image" alt="The sorted screenshot" />
+          <figcaption class="hint">Press and hold the image to save it on a phone.</figcaption>
+        </figure>
+        <p id="export-note" class="hint" hidden></p>
+        <a id="download" class="button" download="sorted.png">Download PNG</a>
+      </section>
+    </main>
+
+    <footer class="bar footer">
+      <p class="hint">
+        Runs entirely in your browser. No uploads, no accounts, no network requests.
+      </p>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

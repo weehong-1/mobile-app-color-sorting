@@ -1,0 +1,95 @@
+{
+  "source": "fixtures/IMG_0572.PNG",
+  "width": 1284,
+  "height": 2778,
+  "icons": [
+    {
+      "name": "Endel",
+      "column": 0,
+      "row": 0,
+      "left": 97.69,
+      "top": 216.21,
+      "right": 301.31,
+      "bottom": 418.96,
+      "width": 203.62,
+      "height": 202.74
+    },
+    {
+      "name": "Spotify",
+      "column": 1,
+      "row": 0,
+      "left": 392.69,
+      "top": 216.3,
+      "right": 596.31,
+      "bottom": 418.64,
+      "width": 203.62,
+      "height": 202.34
+    },
+    {
+      "name": "QQMusic",
+      "column": 2,
+      "row": 0,
+      "left": 689.77,
+      "top": 215.67,
+      "right": 893.12,
+      "bottom": 419.27,
+      "width": 203.35,
+      "height": 203.6
+    },
+    {
+      "name": "TickTick",
+      "column": 0,
+      "row": 1,
+      "left": 97.88,
+      "top": 534.67,
+      "right": 301.17,
+      "bottom": 738.26,
+      "width": 203.29,
+      "height": 203.59
+    },
+    {
+      "name": "MinimaList",
+      "column": 1,
+      "row": 1,
+      "left": 392.77,
+      "top": 534.68,
+      "right": 596.26,
+      "bottom": 738.3,
+      "width": 203.49,
+      "height": 203.62
+    },
+    {
+      "name": "Todoist",
+      "column": 2,
+      "row": 1,
+      "left": 689.75,
+      "top": 535.98,
+      "right": 893.34,
+      "bottom": 737.57,
+      "width": 203.59,
+      "height": 201.6
+    },
+    {
+      "name": "Meitu",
+      "column": 2,
+      "row": 5,
+      "left": 689.66,
+      "top": 1811.43,
+      "right": 893.36,
+      "bottom": 2013.16,
+      "width": 203.7,
+      "height": 201.73
+    },
+    {
+      "name": "轻颜",
+      "column": 3,
+      "row": 5,
+      "left": 984.75,
+      "top": 1810.68,
+      "right": 1188.27,
+      "bottom": 2014.3,
+      "width": 203.52,
+      "height": 203.62
+    }
+  ]
+}

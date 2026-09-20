@@ -1,0 +1,183 @@
+{
+  "source": "fixtures/IMG_0571.PNG",
+  "width": 1284,
+  "height": 2778,
+  "icons": [
+    {
+      "name": "1Password",
+      "column": 0,
+      "row": 0,
+      "left": 97.32,
+      "top": 215.78,
+      "right": 300.49,
+      "bottom": 418.03,
+      "width": 203.17,
+      "height": 202.24
+    },
+    {
+      "name": "Owlfiles",
+      "column": 1,
+      "row": 0,
+      "left": 392.8,
+      "top": 215.67,
+      "right": 596.24,
+      "bottom": 419.29,
+      "width": 203.45,
+      "height": 203.61
+    },
+    {
+      "name": "DeepL",
+      "column": 0,
+      "row": 1,
+      "left": 97.88,
+      "top": 534.67,
+      "right": 301.18,
+      "bottom": 738.28,
+      "width": 203.3,
+      "height": 203.61
+    },
+    {
+      "name": "Youdao",
+      "column": 1,
+      "row": 1,
+      "left": 392.69,
+      "top": 536.12,
+      "right": 596.2,
+      "bottom": 738.3,
+      "width": 203.51,
+      "height": 202.18
+    },
+    {
+      "name": "Gemini",
+      "column": 0,
+      "row": 2,
+      "left": 97.86,
+      "top": 853.66,
+      "right": 301.24,
+      "bottom": 1057.3,
+      "width": 203.38,
+      "height": 203.64
+    },
+    {
+      "name": "DeepSeek",
+      "column": 1,
+      "row": 2,
+      "left": 392.75,
+      "top": 853.67,
+      "right": 596.22,
+      "bottom": 1057.28,
+      "width": 203.47,
+      "height": 203.61
+    },
+    {
+      "name": "ChatGPT",
+      "column": 2,
+      "row": 2,
+      "left": 689.83,
+      "top": 853.66,
+      "right": 892.97,
+      "bottom": 1057.27,
+      "width": 203.14,
+      "height": 203.6
+    },
+    {
+      "name": "Claude",
+      "column": 3,
+      "row": 2,
+      "left": 984.63,
+      "top": 855.21,
+      "right": 1188.37,
+      "bottom": 1055.77,
+      "width": 203.74,
+      "height": 200.55
+    },
+    {
+      "name": "Gmail",
+      "column": 0,
+      "row": 3,
+      "left": 97.83,
+      "top": 1172.64,
+      "right": 301.22,
+      "bottom": 1376.3,
+      "width": 203.39,
+      "height": 203.66
+    },
+    {
+      "name": "Spark",
+      "column": 1,
+      "row": 3,
+      "left": 392.64,
+      "top": 1174.19,
+      "right": 596.06,
+      "bottom": 1374.99,
+      "width": 203.43,
+      "height": 200.79
+    },
+    {
+      "name": "Telegram",
+      "column": 0,
+      "row": 4,
+      "left": 97.9,
+      "top": 1491.67,
+      "right": 301.24,
+      "bottom": 1695.28,
+      "width": 203.34,
+      "height": 203.61
+    },
+    {
+      "name": "WhatsApp",
+      "column": 1,
+      "row": 4,
+      "left": 392.83,
+      "top": 1491.59,
+      "right": 596.21,
+      "bottom": 1695.26,
+      "width": 203.38,
+      "height": 203.67
+    },
+    {
+      "name": "WeChat",
+      "column": 2,
+      "row": 4,
+      "left": 689.89,
+      "top": 1491.56,
+      "right": 892.27,
+      "bottom": 1693.72,
+      "width": 202.37,
+      "height": 202.16
+    },
+    {
+      "name": "Simplenote",
+      "column": 0,
+      "row": 5,
+      "left": 97.78,
+      "top": 1810.67,
+      "right": 301.24,
+      "bottom": 2014.3,
+      "width": 203.46,
+      "height": 203.63
+    },
+    {
+      "name": "UpNote",
+      "column": 1,
+      "row": 5,
+      "left": 392.78,
+      "top": 1810.66,
+      "right": 596.08,
+      "bottom": 2014.3,
+      "width": 203.3,
+      "height": 203.63
+    },
+    {
+      "name": "VoiceRecorder",
+      "column": 2,
+      "row": 5,
+      "left": 689.68,
+      "top": 1811.19,
+      "right": 893.33,
+      "bottom": 2013.25,
+      "width": 203.65,
+      "height": 202.06
+    }
+  ]
+}
