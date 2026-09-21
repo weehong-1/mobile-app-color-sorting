@@ -30,6 +30,16 @@ afterEach(() => {
 
 describe('preferences round trip', () => {
   /**
+   * ADR-0016. A saved preference still wins: someone who chose the rainbow
+   * before today keeps it, and only a fresh browser sees the new default.
+   */
+  it('opens on tile, then mark', () => {
+    expect(DEFAULT_PREFERENCES.sortMode).toBe('tile-then-mark');
+    savePreferences({ ...DEFAULT_PREFERENCES, sortMode: 'rainbow' });
+    expect(loadPreferences().sortMode).toBe('rainbow');
+  });
+
+  /**
    * The regression this file exists for: 'families' was missing from the list
    * of valid sort modes, so choosing it and reloading silently reverted to
    * rainbow, taking the palette panel with it. The list is typed from the union
@@ -62,6 +72,7 @@ describe('preferences round trip', () => {
       backgroundHex: '#123456',
       whiteFirst: true,
       darkThreshold: 0.41,
+      markThreshold: 0.35,
       showLabels: true,
       labelColourHex: '#abcdef',
     };

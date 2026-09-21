@@ -17,6 +17,11 @@ export interface Preferences {
   sortMode: SortMode;
   whiteFirst: boolean;
   darkThreshold: number;
+  /**
+   * How much of a white tile a coloured mark must cover before the icon is
+   * read as that mark's colour rather than as a white tile. See ADR-0011.
+   */
+  markThreshold: number;
   layout: LayoutMode;
   /** A pasted palette, or null for the built-in one. */
   paletteText: string | null;
@@ -30,9 +35,12 @@ const KEY = 'icon-sorter.preferences.v1';
 
 export const DEFAULT_PREFERENCES: Preferences = {
   backgroundHex: '#f2f2f7',
-  sortMode: 'rainbow',
+  // The mode that answers the question people arrive with -- a page of white
+  // cards ordered by the logos on them. See `docs/adr/0016`.
+  sortMode: 'tile-then-mark',
   whiteFirst: false,
   darkThreshold: 0.32,
+  markThreshold: 0.2,
   layout: 'packed',
   paletteText: null,
   showLabels: false,
@@ -59,6 +67,10 @@ export function loadPreferences(): Preferences {
         typeof parsed.darkThreshold === 'number' && parsed.darkThreshold > 0 && parsed.darkThreshold < 1
           ? parsed.darkThreshold
           : DEFAULT_PREFERENCES.darkThreshold,
+      markThreshold:
+        typeof parsed.markThreshold === 'number' && parsed.markThreshold > 0 && parsed.markThreshold < 1
+          ? parsed.markThreshold
+          : DEFAULT_PREFERENCES.markThreshold,
       layout: (LAYOUT_MODES as readonly string[]).includes(parsed.layout ?? '')
         ? parsed.layout!
         : DEFAULT_PREFERENCES.layout,

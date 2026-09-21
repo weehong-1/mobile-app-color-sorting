@@ -15,6 +15,7 @@ import {
   type GradientField,
   columnProjection,
   meanMagnitude,
+  outlineMagnitude,
   rowProjection,
 } from './gradient.ts';
 
@@ -55,8 +56,13 @@ export interface DetectOptions {
 }
 
 export interface OccupancyOptions {
-  /** Fraction of the icon square trimmed away before scoring. */
+  /** Fraction of the icon square trimmed away before scoring its interior. */
   readonly inset: number;
+  /**
+   * How far either side of the icon square's edge the outline band reaches, as
+   * a fraction of the icon size.
+   */
+  readonly outline: number;
   /** Absolute floor, so a page with no icons cannot invent them. */
   readonly floor: number;
   /**
@@ -69,6 +75,7 @@ export interface OccupancyOptions {
 
 export const DEFAULT_OCCUPANCY_OPTIONS: OccupancyOptions = {
   inset: 0.1,
+  outline: 0.06,
   floor: 1.2,
   minGapRatio: 2.5,
 };
@@ -372,19 +379,48 @@ export function slotRect(grid: Grid, slot: Slot): Band & { top: number; bottom: 
   return { start, end: start + grid.size, top, bottom: top + grid.size };
 }
 
+/**
+ * How much evidence there is that a slot holds an icon: the stronger of the
+ * detail inside the icon square and the square's own outline against the
+ * wallpaper (ADR-0008).
+ *
+ * Neither measurement alone covers every icon. A flat icon with a small glyph
+ * -- Singpass, Phone, Messages -- has almost no interior detail once the mean
+ * is taken over the whole square, and scores barely above blurred wallpaper.
+ * The outline is what it does have. Interior detail is kept for the opposite
+ * case, where a busy icon sits on wallpaper close to its own edge colour.
+ */
+function slotEvidence(
+  field: GradientField,
+  grid: Grid,
+  slot: Slot,
+  options: OccupancyOptions,
+): number {
+  const rect = slotRect(grid, slot);
+  const trim = grid.size * options.inset;
+  const inner = grid.size - 2 * trim;
+  const interior = meanMagnitude(field, rect.start + trim, rect.top + trim, inner, inner);
+  const outline = outlineMagnitude(
+    field,
+    rect.start,
+    rect.top,
+    grid.size,
+    grid.size,
+    grid.size * options.outline,
+  );
+  return Math.max(interior, outline);
+}
+
 export function scoreOccupancy(
   field: GradientField,
   grid: Grid,
   options: OccupancyOptions,
 ): number[][] {
-  const trim = grid.size * options.inset;
-  const inner = grid.size - 2 * trim;
   const scores: number[][] = [];
   for (let row = 0; row < grid.rows; row++) {
     const cells: number[] = [];
     for (let column = 0; column < grid.columns; column++) {
-      const rect = slotRect(grid, { column, row });
-      cells.push(meanMagnitude(field, rect.start + trim, rect.top + trim, inner, inner));
+      cells.push(slotEvidence(field, grid, { column, row }, options));
     }
     scores.push(cells);
   }

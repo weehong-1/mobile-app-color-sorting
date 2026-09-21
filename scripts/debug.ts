@@ -7,7 +7,7 @@
 import { mkdirSync } from 'node:fs';
 import { gradientField } from '../src/core/gradient.ts';
 import { DEFAULT_DETECT_OPTIONS, detectGrid, slotRect } from '../src/core/grid.ts';
-import { clone, drawCross, drawRect, fillRect } from '../src/test-support/draw.ts';
+import { clone, drawCross, drawRect, drawSprite, fillCheckerboard } from '../src/test-support/draw.ts';
 import { DEFAULT_SPRITE_OPTIONS, extractSprite } from '../src/core/sprite.ts';
 import { createRaster } from '../src/core/raster.ts';
 import { DEFAULT_ANALYSIS_OPTIONS, analyseSprite } from '../src/core/analysis.ts';
@@ -19,8 +19,9 @@ import { FIXTURES, readPng } from '../src/test-support/png.ts';
 import { writePng } from '../src/test-support/png-write.ts';
 import truthDense from '../fixtures/IMG_0571.truth.json' with { type: 'json' };
 import truthSparse from '../fixtures/IMG_0572.truth.json' with { type: 'json' };
+import truthFlat from '../fixtures/IMG_0910.truth.json' with { type: 'json' };
 
-const TRUTH = { dense: truthDense, sparse: truthSparse };
+const TRUTH = { dense: truthDense, sparse: truthSparse, flat: truthFlat };
 const DETECTED: readonly [number, number, number] = [255, 64, 0];
 const TRUTH_COLOR: readonly [number, number, number] = [0, 224, 255];
 const EMPTY: readonly [number, number, number] = [120, 120, 120];
@@ -61,24 +62,9 @@ for (const [name, path] of Object.entries(FIXTURES)) {
   const cell = Math.max(...sprites.map((s) => Math.max(s.bounds.width, s.bounds.height))) + 16;
   const perRow = 4;
   const sheet = createRaster(cell * perRow, cell * Math.ceil(sprites.length / perRow), raster.space);
-  for (let y = 0; y < sheet.height; y++) {
-    for (let x = 0; x < sheet.width; x++) {
-      const dark = (Math.floor(x / 16) + Math.floor(y / 16)) % 2 === 0;
-      fillRect(sheet, x, y, 1, 1, dark ? [64, 64, 72] : [96, 96, 104]);
-    }
-  }
+  fillCheckerboard(sheet);
   sprites.forEach((sprite, index) => {
-    const ox = (index % perRow) * cell + 8;
-    const oy = Math.floor(index / perRow) * cell + 8;
-    for (let y = 0; y < sprite.bounds.height; y++) {
-      for (let x = 0; x < sprite.bounds.width; x++) {
-        const alpha = sprite.mask[y * sprite.bounds.width + x]!;
-        if (alpha <= 0) continue;
-        const from = (y * sprite.bounds.width + x) * 4;
-        fillRect(sheet, ox + x, oy + y, 1, 1,
-          [sprite.pixels[from]!, sprite.pixels[from + 1]!, sprite.pixels[from + 2]!], alpha);
-      }
-    }
+    drawSprite(sheet, sprite, (index % perRow) * cell + 8, Math.floor(index / perRow) * cell + 8);
   });
   await writePng(sheet, `debug/sprites-${name}.png`);
   await writePng(sheet, `debug/sprites-${name}-small.png`, 0.5);

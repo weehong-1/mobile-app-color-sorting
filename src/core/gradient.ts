@@ -86,6 +86,34 @@ export function rowProjection(field: GradientField, bands: readonly Band[]): Flo
   return out;
 }
 
+/**
+ * Total magnitude and pixel count inside a rectangle, clipped to the field.
+ * Returning the count rather than the mean is what lets `outlineMagnitude`
+ * subtract one rectangle from another and still get an honest average when the
+ * outer one runs off the edge of the image.
+ */
+function sumMagnitude(
+  field: GradientField,
+  x0: number,
+  y0: number,
+  w: number,
+  h: number,
+): [sum: number, count: number] {
+  const { width, height, dx, dy } = field;
+  const left = Math.max(0, Math.round(x0));
+  const top = Math.max(0, Math.round(y0));
+  const right = Math.min(width, Math.round(x0 + w));
+  const bottom = Math.min(height, Math.round(y0 + h));
+  if (right <= left || bottom <= top) return [0, 0];
+
+  let sum = 0;
+  for (let y = top; y < bottom; y++) {
+    const row = y * width;
+    for (let x = left; x < right; x++) sum += dx[row + x]! + dy[row + x]!;
+  }
+  return [sum, (right - left) * (bottom - top)];
+}
+
 /** Mean gradient magnitude inside a rectangle. Used to decide if a slot holds an icon. */
 export function meanMagnitude(
   field: GradientField,
@@ -94,17 +122,38 @@ export function meanMagnitude(
   w: number,
   h: number,
 ): number {
-  const { width, height, dx, dy } = field;
-  const left = Math.max(0, Math.round(x0));
-  const top = Math.max(0, Math.round(y0));
-  const right = Math.min(width, Math.round(x0 + w));
-  const bottom = Math.min(height, Math.round(y0 + h));
-  if (right <= left || bottom <= top) return 0;
+  const [sum, count] = sumMagnitude(field, x0, y0, w, h);
+  return count === 0 ? 0 : sum / count;
+}
 
-  let sum = 0;
-  for (let y = top; y < bottom; y++) {
-    const row = y * width;
-    for (let x = left; x < right; x++) sum += dx[row + x]! + dy[row + x]!;
-  }
-  return sum / ((right - left) * (bottom - top));
+/**
+ * Mean gradient magnitude in the band that straddles a rectangle's edge,
+ * reaching `thickness` pixels either side of it. For a slot this is the icon's
+ * own outline against the wallpaper, which is the only edge a flat icon has
+ * (ADR-0008).
+ */
+export function outlineMagnitude(
+  field: GradientField,
+  x0: number,
+  y0: number,
+  w: number,
+  h: number,
+  thickness: number,
+): number {
+  const [outerSum, outerCount] = sumMagnitude(
+    field,
+    x0 - thickness,
+    y0 - thickness,
+    w + 2 * thickness,
+    h + 2 * thickness,
+  );
+  const [innerSum, innerCount] = sumMagnitude(
+    field,
+    x0 + thickness,
+    y0 + thickness,
+    w - 2 * thickness,
+    h - 2 * thickness,
+  );
+  const count = outerCount - innerCount;
+  return count <= 0 ? 0 : (outerSum - innerSum) / count;
 }

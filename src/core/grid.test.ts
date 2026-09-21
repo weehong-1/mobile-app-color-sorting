@@ -7,11 +7,14 @@ import {
   detectGrid,
   fitRowLattice,
   occupancyThreshold,
+  scoreOccupancy,
   slotRect,
 } from './grid.ts';
+import { filled, paintRoundedRect } from '../test-support/synthetic.ts';
 import { FIXTURES, readPng } from '../test-support/png.ts';
 import truthDense from '../../fixtures/IMG_0571.truth.json' with { type: 'json' };
 import truthSparse from '../../fixtures/IMG_0572.truth.json' with { type: 'json' };
+import truthFlat from '../../fixtures/IMG_0910.truth.json' with { type: 'json' };
 
 /** Criterion 1's tolerance, against the hand-measured truth files. */
 const TOLERANCE = 3;
@@ -95,9 +98,28 @@ describe('occupancyThreshold', () => {
   });
 });
 
+describe('scoreOccupancy', () => {
+  /**
+   * The IMG_0910 case that ADR-0008 exists for, in miniature: a flat icon with
+   * no interior detail at all, which only its own outline gives away.
+   */
+  it('scores a flat icon far above the empty slot beside it', () => {
+    const grid = {
+      left: 20, top: 20, size: 100, columnPitch: 140, rowPitch: 140, columns: 2, rows: 1,
+    };
+    const raster = filled(320, 160, [120, 180, 230]);
+    paintRoundedRect(raster, { x: 20, y: 20, width: 100, height: 100, radius: 22 }, [200, 40, 40]);
+
+    const scores = scoreOccupancy(gradientField(raster), grid, DEFAULT_OCCUPANCY_OPTIONS);
+    expect(scores[0]![1]!).toBe(0);
+    expect(scores[0]![0]!).toBeGreaterThan(DEFAULT_OCCUPANCY_OPTIONS.floor);
+  });
+});
+
 describe.each([
   ['dense', FIXTURES.dense, truthDense, 16, 6],
   ['sparse', FIXTURES.sparse, truthSparse, 8, 6],
+  ['flat', FIXTURES.flat, truthFlat, 21, 6],
 ] as const)('detectGrid on the %s fixture', (_name, path, truth, expectedIcons, expectedRows) => {
   const raster = readPng(path);
   const detection = detectGrid(gradientField(raster), DEFAULT_DETECT_OPTIONS);

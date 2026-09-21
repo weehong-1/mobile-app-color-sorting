@@ -6,10 +6,14 @@
 import sharp from 'sharp';
 import type { Raster } from '../core/raster.ts';
 
-export async function writePng(raster: Raster, path: string, scale = 1): Promise<void> {
-  const image = sharp(Buffer.from(raster.data.buffer, raster.data.byteOffset, raster.data.length), {
+function asImage(raster: Raster) {
+  return sharp(Buffer.from(raster.data.buffer, raster.data.byteOffset, raster.data.length), {
     raw: { width: raster.width, height: raster.height, channels: 4 },
   });
+}
+
+export async function writePng(raster: Raster, path: string, scale = 1): Promise<void> {
+  const image = asImage(raster);
   const resized =
     scale === 1 ? image : image.resize(Math.round(raster.width * scale), null, { fit: 'inside' });
   await resized.png({ compressionLevel: 6 }).toFile(path);

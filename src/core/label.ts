@@ -11,6 +11,10 @@
  * is not white text: a coloured mark such as the blue "new app" dot raises one
  * channel far more than the others, so its minimum stays near zero, and a
  * shadow lowers all three rather than raising them.
+ *
+ * What survives all three of those is the wallpaper's own bright edges, which
+ * lift every channel at once. Those are rejected afterwards, by how far they
+ * get rather than by what colour they are: see `keepSolidRegions`.
  */
 import type { Raster, Rect } from './raster.ts';
 
@@ -24,6 +28,8 @@ export interface LabelOptions {
   /** Soft threshold applied to the recovered alpha. */
   readonly softFloor: number;
   readonly softCeiling: number;
+  /** A region of lit pixels is text only if it reaches this alpha somewhere. */
+  readonly minPeak: number;
   /** Below this share of lit pixels we treat the strip as having no label. */
   readonly minCoverage: number;
 }
@@ -35,8 +41,12 @@ export const DEFAULT_LABEL_OPTIONS: LabelOptions = {
   blockSize: 16,
   softFloor: 0.22,
   softCeiling: 0.62,
+  minPeak: 0.9,
   minCoverage: 0.004,
 };
+
+/** Alpha above which a pixel counts as having text in it. */
+const LIT = 0.05;
 
 export interface Label {
   /** Where the strip was taken from, in screenshot coordinates. */
@@ -111,6 +121,58 @@ function estimateBackground(
   return fine;
 }
 
+/**
+ * Erases connected regions of lit pixels that never reach full strength.
+ *
+ * White text recovers to 1 at the centre of every stroke whatever is behind
+ * it, because the solve is normalised by the headroom the background left. A
+ * bright edge in the wallpaper does not: it lifts all three channels part of
+ * the way and stops there, which is why taking the per-channel minimum cannot
+ * reject it. Across the three fixtures, 382 of 386 recovered regions peak at
+ * 1.00; the four that do not peak at 0.49 or below, and every one of them is
+ * wallpaper -- IMG_0910 has a bright diagonal running through several strips.
+ *
+ * Whole regions go or stay, so a glyph keeps its soft edges.
+ */
+function keepSolidRegions(
+  alpha: Float32Array,
+  width: number,
+  height: number,
+  minPeak: number,
+): void {
+  const seen = new Uint8Array(alpha.length);
+  const region: number[] = [];
+  const stack: number[] = [];
+  const visit = (at: number): void => {
+    if (seen[at] || alpha[at]! <= LIT) return;
+    seen[at] = 1;
+    stack.push(at);
+  };
+
+  for (let start = 0; start < alpha.length; start++) {
+    if (seen[start] || alpha[start]! <= LIT) continue;
+
+    region.length = 0;
+    stack.length = 0;
+    visit(start);
+    let peak = 0;
+
+    while (stack.length > 0) {
+      const at = stack.pop()!;
+      region.push(at);
+      peak = Math.max(peak, alpha[at]!);
+      const x = at % width;
+      const y = (at - x) / width;
+      if (x > 0) visit(at - 1);
+      if (x < width - 1) visit(at + 1);
+      if (y > 0) visit(at - width);
+      if (y < height - 1) visit(at + width);
+    }
+
+    if (peak < minPeak) for (const at of region) alpha[at] = 0;
+  }
+}
+
 function smoothStep(edge0: number, edge1: number, value: number): number {
   const t = Math.max(0, Math.min(1, (value - edge0) / (edge1 - edge0)));
   return t * t * (3 - 2 * t);
@@ -146,7 +208,6 @@ export function extractLabel(
 
   const background = estimateBackground(strip, clampedWidth, height, options.blockSize);
   const alpha = new Float32Array(clampedWidth * height);
-  let lit = 0;
   for (let i = 0; i < alpha.length; i++) {
     let smallest = 1;
     for (let c = 0; c < 3; c++) {
@@ -155,11 +216,12 @@ export function extractLabel(
       const value = headroom <= 1 ? 0 : (strip[i * 4 + c]! - base) / headroom;
       smallest = Math.min(smallest, value);
     }
-    const soft = smoothStep(options.softFloor, options.softCeiling, smallest);
-    alpha[i] = soft;
-    if (soft > 0.05) lit++;
+    alpha[i] = smoothStep(options.softFloor, options.softCeiling, smallest);
   }
+  keepSolidRegions(alpha, clampedWidth, height, options.minPeak);
 
+  let lit = 0;
+  for (const value of alpha) if (value > LIT) lit++;
   const coverage = lit / alpha.length;
   if (coverage < options.minCoverage) return null;
 

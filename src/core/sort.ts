@@ -3,7 +3,9 @@
  *
  * Hues are rotated before comparison so the rainbow starts near pink rather
  * than at an arbitrary red: pinks lead, then reds, oranges, greens, blues and
- * violets. Every mode is a stable sort over the icons' reading order, so two
+ * violets. The neutrals follow as one ramp, white through gray to black, so
+ * that a light grey tile sits with the whites it resembles rather than among
+ * the colours. Every mode is a stable sort over the icons' reading order, so two
  * icons the eye cannot tell apart keep the positions they had on the original
  * screen instead of swapping unpredictably between runs.
  */
@@ -16,7 +18,14 @@ import { type Palette, builtinPalette, familyIndexFor } from './palette.ts';
  * 'families' preference silently reverted to rainbow, because the validation
  * list was typed `readonly SortMode[]` and a missing member is not a type error.
  */
-export const SORT_MODES = ['rainbow', 'families', 'hue', 'dark-to-light', 'light-to-dark'] as const;
+export const SORT_MODES = [
+  'rainbow',
+  'families',
+  'tile-then-mark',
+  'hue',
+  'dark-to-light',
+  'light-to-dark',
+] as const;
 
 export type SortMode = (typeof SORT_MODES)[number];
 
@@ -33,7 +42,12 @@ export interface SortOptions {
   readonly palette?: Palette;
 }
 
-export const DEFAULT_SORT_OPTIONS: SortOptions = { mode: 'rainbow', whiteFirst: false };
+/**
+ * 'tile-then-mark' rather than 'rainbow' since 2026-09-21: the order the app
+ * opens on is the one that sorts a page of white cards by the logos drawn on
+ * them, which is the question people arrive with. See `docs/adr/0016`.
+ */
+export const DEFAULT_SORT_OPTIONS: SortOptions = { mode: 'tile-then-mark', whiteFirst: false };
 
 /**
  * Where the rainbow begins, in OKLCH degrees. A constant rather than a control:
@@ -46,13 +60,37 @@ export function rotateHue(hue: number, anchor: number = HUE_ANCHOR): number {
   return ((hue - anchor) % 360 + 360) % 360;
 }
 
+/**
+ * How wide a band of hue counts as one colour, in degrees.
+ *
+ * Ordering marks by hue alone rests on differences nobody can see: the four red
+ * logos on the reference page measure 40.95, 41.05, 43.38 and 44.53 degrees,
+ * and a lightness key placed after hue never runs, because no two of those are
+ * equal. Banding them makes one red of the four and lets lightness do the
+ * visible work.
+ */
+export const HUE_BAND = 15;
+
+/** Which band a hue falls in, counted from the anchor. */
+export function hueBand(hue: number, anchor: number = HUE_ANCHOR): number {
+  return Math.floor(rotateHue(hue, anchor) / HUE_BAND);
+}
+
 export interface AnalysedIcon {
   /** Position in the original screenshot's reading order. */
   readonly index: number;
   readonly color: IconColor;
 }
 
-const RAINBOW_GROUPS: readonly ColorClass[] = ['chromatic', 'gray', 'dark', 'white'];
+/**
+ * Colours first, then the neutrals as one continuous ramp from white through
+ * gray to black. The neutrals used to be split -- gray, dark, then white last
+ * -- which put a silver tile in the middle of the blues and left the white
+ * tiles stranded after the blacks. Nothing was misclassified when that
+ * happened; a light grey icon simply has nowhere to sit unless the neutrals are
+ * kept together.
+ */
+const RAINBOW_GROUPS: readonly ColorClass[] = ['chromatic', 'white', 'gray', 'dark'];
 
 let defaultPalette: Palette | null = null;
 
@@ -83,7 +121,8 @@ function byFamily(icons: readonly AnalysedIcon[], palette: Palette): AnalysedIco
     (icon) => -icon.color.dominant.L,
   ]);
 }
-const WHITE_FIRST_GROUPS: readonly ColorClass[] = ['white', 'chromatic', 'gray', 'dark'];
+/** The same ramp, led by its white end rather than trailed by its black one. */
+const WHITE_FIRST_GROUPS: readonly ColorClass[] = ['white', 'gray', 'dark', 'chromatic'];
 
 /** Sorts a copy, comparing by each key in turn and falling back to reading order. */
 function orderBy(
@@ -118,14 +157,72 @@ function withinGroup(
       ]);
     }
     case 'gray':
-      return orderBy(icons, [(icon) => icon.color.dominant.L]);
+      // Pale to deep, continuing the ramp down from the white group.
+      return orderBy(icons, [(icon) => -icon.color.dominant.L]);
     case 'white':
-      // By the colour of the mark on the tile; icons with no accent go last.
+      // By the colour of the mark on the tile, a band of hue at a time and pale
+      // to deep inside a band; icons with no accent go last.
       return orderBy(icons, [
         (icon) => (icon.color.accent ? 0 : 1),
-        (icon) => (icon.color.accent ? rotateHue(icon.color.accent.h) : 0),
+        (icon) => (icon.color.accent ? hueBand(icon.color.accent.h) : 0),
+        (icon) => (icon.color.accent ? -icon.color.accent.L : 0),
       ]);
   }
+}
+
+/**
+ * Grouped by the tile an icon sits on, and ordered inside that group by the
+ * mark drawn on it.
+ *
+ * The rainbow asks one question of an icon -- what colour is it? -- and a white
+ * card with a red logo has no honest answer: the tile says white, the logo says
+ * red, and which one wins comes down to a threshold nobody agrees on. This mode
+ * declines the question. The tile groups, the mark orders, and both keep their
+ * own colour, so every white card sits with the other white cards and runs red
+ * through blue by the thing drawn on it.
+ *
+ * Within a chromatic tile group the tile's own hue already orders them, so the
+ * mark only breaks ties. Within the neutral groups the mark does the work,
+ * since a page of white tiles is otherwise unsorted.
+ */
+function withinTileGroup(
+  group: ColorClass,
+  icons: readonly AnalysedIcon[],
+  neutralChroma: number,
+): AnalysedIcon[] {
+  const marked = (icon: AnalysedIcon) => (icon.color.mark ? 0 : 1);
+  const markHue = (icon: AnalysedIcon) => (icon.color.mark ? rotateHue(icon.color.mark.h) : 0);
+
+  if (group === 'chromatic') {
+    return orderBy(icons, [
+      (icon) => rotateHue(icon.color.tile.h),
+      marked,
+      markHue,
+      (icon) => -icon.color.tile.L,
+    ]);
+  }
+  // Near-neutral tiles have no hue worth sorting by, so the mark leads: a band
+  // of mark hue at a time, pale to deep inside a band, and the tile's own
+  // lightness continuing the ramp for anything that carries no mark at all.
+  return orderBy(icons, [
+    marked,
+    (icon) => (icon.color.mark ? hueBand(icon.color.mark.h) : 0),
+    (icon) => (icon.color.mark ? -icon.color.mark.L : 0),
+    (icon) => (icon.color.tile.C >= neutralChroma ? rotateHue(icon.color.tile.h) : 0),
+    (icon) => -icon.color.tile.L,
+  ]);
+}
+
+/** The rainbow: groups in order, each group ordered by its own rule. */
+function withinGroupOrder(
+  icons: readonly AnalysedIcon[],
+  options: SortOptions,
+  neutralChroma: number,
+): AnalysedIcon[] {
+  const groups = options.whiteFirst ? WHITE_FIRST_GROUPS : RAINBOW_GROUPS;
+  return groups.flatMap((group) =>
+    withinGroup(group, icons.filter((icon) => icon.color.colorClass === group), neutralChroma),
+  );
 }
 
 export function sortIcons(
@@ -134,12 +231,8 @@ export function sortIcons(
 ): AnalysedIcon[] {
   const neutralChroma = options.neutralChroma ?? DEFAULT_ANALYSIS_OPTIONS.neutralMaxChroma;
   switch (options.mode) {
-    case 'rainbow': {
-      const groups = options.whiteFirst ? WHITE_FIRST_GROUPS : RAINBOW_GROUPS;
-      return groups.flatMap((group) =>
-        withinGroup(group, icons.filter((icon) => icon.color.colorClass === group), neutralChroma),
-      );
-    }
+    case 'rainbow':
+      return withinGroupOrder(icons, options, neutralChroma);
     case 'families': {
       // Same groups as the rainbow; only the chromatic group is ordered
       // differently, because the neutrals have no family to belong to.
@@ -151,6 +244,12 @@ export function sortIcons(
           ? byFamily(members, palette)
           : withinGroup(group, members, neutralChroma);
       });
+    }
+    case 'tile-then-mark': {
+      const groups = options.whiteFirst ? WHITE_FIRST_GROUPS : RAINBOW_GROUPS;
+      return groups.flatMap((group) =>
+        withinTileGroup(group, icons.filter((icon) => icon.color.tileClass === group), neutralChroma),
+      );
     }
     case 'hue': {
       const chromatic = icons.filter((icon) => icon.color.colorClass === 'chromatic');

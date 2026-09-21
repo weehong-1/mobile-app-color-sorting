@@ -95,12 +95,38 @@ function measureIcon(
   return { left, top, right, bottom };
 }
 
+/**
+ * Edges the scanline measurement cannot see, read by hand off the pixel rows
+ * and columns either side of them instead.
+ *
+ * Healthy 365 is a white card on pale blue wallpaper with a grey rim a few
+ * pixels inside its own left and right edges, and a green strip along its
+ * bottom. Every one of those is a stronger gradient than the edge it hides,
+ * and all of them fall inside the search window, so `edgePeak` reports the
+ * decoration rather than the icon. Nothing in the detector has this problem --
+ * it never looks at one icon alone -- but the truth file has to be right about
+ * it before it can grade anything.
+ */
+const CORRECTIONS: Record<string, Record<string, Bounds>> = {
+  flat: {
+    'Healthy 365': { left: 94.39, top: 869.8, right: 286.47, bottom: 1060.5 },
+  },
+};
+
 const NAMES: Record<string, readonly string[]> = {
   dense: [
     '1Password', 'Owlfiles', 'DeepL', 'Youdao', 'Gemini', 'DeepSeek', 'ChatGPT', 'Claude',
     'Gmail', 'Spark', 'Telegram', 'WhatsApp', 'WeChat', 'Simplenote', 'UpNote', 'VoiceRecorder',
   ],
   sparse: ['Endel', 'Spotify', 'QQMusic', 'TickTick', 'MinimaList', 'Todoist', 'Meitu', '轻颜'],
+  flat: [
+    'SC Mobile', 'Authenticator', 'MyICA Mobile', 'MyNIISe',
+    'MyPB', 'SP', '中国移动', 'Great Eastern',
+    'Healthy 365', 'Donate Blood', 'CPF Mobile', 'Maxis',
+    'TNG eWallet', 'Alipay', 'Singpass', 'OCBC',
+    'OCBC Business', 'AIA+', 'MySingtel', 'DBS digibank',
+    'DBS PayLah!',
+  ],
 };
 
 for (const [name, path] of Object.entries(FIXTURES)) {
@@ -110,12 +136,15 @@ for (const [name, path] of Object.entries(FIXTURES)) {
 
   const icons = detection.occupied.map((slot, index) => {
     const rect = slotRect(detection.grid, slot);
-    const measured = measureIcon(luma, raster.width, raster.height, {
-      left: rect.start, top: rect.top, right: rect.end, bottom: rect.bottom,
-    });
+    const iconName = NAMES[name]?.[index] ?? `slot-${slot.column}-${slot.row}`;
+    const measured =
+      CORRECTIONS[name]?.[iconName] ??
+      measureIcon(luma, raster.width, raster.height, {
+        left: rect.start, top: rect.top, right: rect.end, bottom: rect.bottom,
+      });
     if (!measured) throw new Error(`Could not measure ${name} slot ${slot.column},${slot.row}`);
     return {
-      name: NAMES[name]?.[index] ?? `slot-${slot.column}-${slot.row}`,
+      name: iconName,
       column: slot.column,
       row: slot.row,
       left: +measured.left.toFixed(2),

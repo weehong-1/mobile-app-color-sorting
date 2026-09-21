@@ -7,9 +7,12 @@ import { DEFAULT_BADGE_OPTIONS, DEFAULT_SPRITE_OPTIONS, detectBadge, extractSpri
 import { FIXTURES, readPng } from '../test-support/png.ts';
 import { BADGE_RED, filled, paintRoundedRect } from '../test-support/synthetic.ts';
 import truthDense from '../../fixtures/IMG_0571.truth.json' with { type: 'json' };
+import truthFlat from '../../fixtures/IMG_0910.truth.json' with { type: 'json' };
 
 const SIZE = 200;
 const WALLPAPER = [200, 198, 188] as const;
+/** Singpass's tile in IMG_0910: red, clearly not badge red. */
+const DEEP_RED = [189, 42, 36] as const;
 
 function scene(tile: readonly [number, number, number], badge: boolean) {
   const raster = filled(500, 500, WALLPAPER);
@@ -94,6 +97,20 @@ describe('detectBadge', () => {
     }
   });
 
+  /**
+   * Singpass in IMG_0910. Its tile sits inside any window wide enough to be
+   * drawn around badge red, so the fill used to run out of the badge and into
+   * the tile, and the badge was lost to the size cap that catches that.
+   */
+  it('finds a badge on a tile that is a different red', () => {
+    const { raster, iconRect } = scene(DEEP_RED, true);
+    const badge = detectBadge(raster, iconRect);
+    expect(badge).not.toBeNull();
+    expect(badge!.width).toBeGreaterThan(SIZE * 0.3);
+    expect(badge!.width).toBeLessThan(SIZE * 0.45);
+    expect(badge!.y).toBeLessThan(iconRect.y);
+  });
+
   it('does not mistake blurred warm wallpaper for a badge', () => {
     // Wallpaper hue and lightness, but the lower chroma that blurring causes.
     const { raster, iconRect } = scene([40, 190, 90], false);
@@ -102,10 +119,14 @@ describe('detectBadge', () => {
   });
 });
 
-describe('sprites from the dense fixture', () => {
-  const raster = readPng(FIXTURES.dense);
+/**
+ * Every sprite on a fixture, keyed by the app name its truth file records. The
+ * truth files list icons in the same reading order `detectGrid` returns them.
+ */
+function spritesByName(path: string, truth: { icons: readonly { name: string }[] }) {
+  const raster = readPng(path);
   const detection = detectGrid(gradientField(raster), DEFAULT_DETECT_OPTIONS);
-  const byName = new Map(
+  return new Map(
     detection.occupied.map((slot, index) => {
       const rect = slotRect(detection.grid, slot);
       const sprite = extractSprite(
@@ -113,9 +134,13 @@ describe('sprites from the dense fixture', () => {
         { x: rect.start, y: rect.top, width: detection.grid.size, height: detection.grid.size },
         DEFAULT_SPRITE_OPTIONS,
       );
-      return [truthDense.icons[index]!.name, sprite] as const;
+      return [truth.icons[index]!.name, sprite] as const;
     }),
   );
+}
+
+describe('sprites from the dense fixture', () => {
+  const byName = spritesByName(FIXTURES.dense, truthDense);
 
   it('finds badges on Gmail and WhatsApp and nowhere else', () => {
     const badged = [...byName].filter(([, sprite]) => sprite.badge).map(([name]) => name).sort();
@@ -151,11 +176,12 @@ describe('sprites from the dense fixture', () => {
   });
 
   it('keeps every other sprite exactly one inset icon square', () => {
-    const inset = insetFor(detection.grid.size, DEFAULT_SPRITE_OPTIONS);
+    const square = [...byName.values()].find((sprite) => !sprite.badge)!.bounds;
     for (const [name, sprite] of byName) {
       if (sprite.badge) continue;
-      expect(sprite.bounds.width, name).toBe(detection.grid.size - 2 * inset);
-      expect(sprite.bounds.height, name).toBe(detection.grid.size - 2 * inset);
+      expect(sprite.bounds.width, name).toBe(square.width);
+      expect(sprite.bounds.height, name).toBe(square.height);
+      expect(sprite.bounds.width, name).toBe(sprite.iconRect.width);
     }
   });
 });
@@ -175,5 +201,24 @@ describe('sprites from the sparse fixture', () => {
       );
       expect(sprite.badge, `slot ${slot.column},${slot.row}`).toBeNull();
     }
+  });
+});
+
+describe('sprites from the flat fixture', () => {
+  const byName = spritesByName(FIXTURES.flat, truthFlat);
+
+  /** Singpass wears its badge on a red tile; the other two do not. */
+  it('finds the three badges on the page and nothing else', () => {
+    const badged = [...byName].filter(([, sprite]) => sprite.badge).map(([name]) => name).sort();
+    expect(badged).toEqual(['Alipay', 'DBS digibank', 'Singpass']);
+  });
+
+  it.each(['Alipay', 'DBS digibank', 'Singpass'])('sizes %s\'s badge like iOS draws it', (name) => {
+    const sprite = byName.get(name)!;
+    const badge = sprite.badge!;
+    expect(badge.width / sprite.iconRect.width).toBeGreaterThan(0.3);
+    expect(badge.width / sprite.iconRect.width).toBeLessThan(0.55);
+    expect(badge.x + badge.width).toBeGreaterThan(sprite.iconRect.x + sprite.iconRect.width);
+    expect(badge.y).toBeLessThan(sprite.iconRect.y);
   });
 });

@@ -27,7 +27,14 @@ described by left edge, top edge, icon size, column pitch and row pitch.
 
 **Slot**:
 One position in the grid. A slot is either occupied or empty; emptiness is
-decided by how much gradient energy sits inside it.
+decided by the stronger of two pieces of gradient evidence, the detail inside
+the slot and its outline (see `docs/adr/0008`).
+
+**Outline**:
+The band of gradient straddling a slot's edge, where the icon square meets the
+wallpaper. The only evidence a flat icon leaves, since its interior averages
+down to almost nothing.
+_Avoid_: border, rim, ring
 
 **Icon**:
 The square region of screenshot pixels at an occupied slot. The unit that gets
@@ -62,19 +69,48 @@ indicator dots, dock. Never reproduced in the output.
 
 **Dominant colour**:
 The colour covering the largest area of an icon. Area wins: a mostly-navy icon
-with a thin teal stripe is navy.
+with a thin teal stripe is navy. Two kinds of icon are exempt, and are measured
+from their coloured pixels instead: a gradient tile, where the largest area is
+still a small one (`docs/adr/0007`), and a white tile carrying a mark over a
+fifth of the icon, where the white is a background rather than a colour anyone
+chose (`docs/adr/0011`).
 _Avoid_: main colour, primary colour, average colour
 
 **Accent colour**:
 An icon's largest well-saturated region that is far from its dominant colour,
 if it covers enough of the icon to count. Used to order icons that share a
-white or dark dominant colour.
+white or dark dominant colour. A mark big enough to speak for its white tile is
+no longer an accent: it has become that icon's dominant colour.
 _Avoid_: secondary colour, highlight
+
+**Tile colour**:
+The colour of the tile an icon is drawn on, read from the band just inside its
+edge where nothing is drawn. It never yields to a mark, so a white card with a
+red logo has a white tile and a red mark rather than one colour that depends on
+how big the logo is.
+_Avoid_: background colour, base colour, outer colour
+
+**Mark colour**:
+The colour of what is drawn on the tile, when it is coloured enough to sort by.
+A white glyph on a blue tile is not a mark colour: there is nothing in it to
+sort by.
+_Avoid_: logo colour, inner colour, foreground
 
 **Colour class**:
 Which of four buckets an icon's dominant colour falls into: **chromatic**,
 **gray**, **dark** or **white**. The buckets sort as groups before icons sort
-within them.
+within them: the chromatic group, then the three neutral ones as a single ramp
+running white, gray, dark. Dark is not purely a matter of lightness: a colour
+too muted to read as a colour is dark a little above the cut as well, so a
+near-black navy is filed with the blacks rather than among the blues
+(`docs/adr/0015`).
+
+**Hue band**:
+A width of hue, counted from the rainbow anchor, inside which every colour
+counts as the same one. Colours are ordered band by band and, within a band,
+from pale to deep — so four red logos a few degrees apart are one red, ordered
+by lightness rather than by a difference nobody can see.
+_Avoid_: bucket, hue bucket, segment
 
 **Rainbow anchor**:
 The hue the sorted order begins at, so that pinks lead and violets trail rather
@@ -83,8 +119,11 @@ than the order starting at an arbitrary red.
 ### Output
 
 **Sort mode**:
-The rule that turns a set of icons into an order: rainbow with groups, hue only,
-colour families, or lightness in either direction.
+The rule that turns a set of icons into an order: tile then mark, rainbow with
+groups, hue only, colour families, or lightness in either direction. *Tile then
+mark* is the one the app opens on: the tile decides an icon's group and the mark
+decides its place inside that group, so a page of white cards is ordered by the
+logos drawn on them.
 
 **Palette**:
 A set of colours, each optionally named, that chromatic icons can be grouped
@@ -98,8 +137,10 @@ not themselves decide any icon's position.
 **Family**:
 A cluster of a palette's swatches sharing a region of hue. Chromatic icons are
 grouped into families, families are ordered by hue from the rainbow anchor, and
-icons within one are ordered from pale to deep.
-_Avoid_: bucket, group, band
+icons within one are ordered from pale to deep. A family comes from a palette
+and is as wide as its swatches make it; a hue band is a fixed width and needs no
+palette. They are not the same thing and neither is a synonym for the other.
+_Avoid_: bucket, group
 
 **Layout**:
 Which slots the sorted icons are given, and how far the sort reaches. **Packed**
@@ -117,3 +158,11 @@ layout is the rule; the arrangement is what it produced.
 The output image: the chosen background colour, with sprites drawn into the
 slots the layout assigns them.
 _Avoid_: result, render, export
+
+### Checking the work
+
+**Truth**:
+The hand-checked record of where an icon actually is, measured from its own
+pixels independently of the detector, so detection can be graded without
+grading its own work.
+_Avoid_: ground truth, expected, baseline

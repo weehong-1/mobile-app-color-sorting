@@ -20,6 +20,9 @@ function colour(colorClass: ColorClass, L: number, C: number, h: number): IconCo
     accentShare: 0,
     colorClass,
     sampleCount: 1000,
+    tile: { L, C, h },
+    tileClass: colorClass,
+    mark: null,
   };
 }
 

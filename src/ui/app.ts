@@ -32,6 +32,11 @@ import { type Preferences, loadPreferences, savePreferences } from './preference
 const NO_ICONS_MESSAGE =
   'Found a grid but no icons in it. Try a different column count, or adjust the grid below.';
 
+/** A share of an icon, written the way the interface talks about it. */
+function asShare(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
 function element<T extends HTMLElement>(id: string): T {
   const found = document.getElementById(id);
   if (!found) throw new Error(`Missing element #${id}`);
@@ -75,6 +80,8 @@ export function start(): void {
     whiteFirst: element<HTMLInputElement>('white-first'),
     darkThreshold: element<HTMLInputElement>('dark-threshold'),
     darkOut: element<HTMLOutputElement>('dark-out'),
+    markThreshold: element<HTMLInputElement>('mark-threshold'),
+    markOut: element<HTMLOutputElement>('mark-out'),
     paletteSection: element<HTMLFieldSetElement>('palette-section'),
     paletteSwatches: element<HTMLDivElement>('palette-swatches'),
     paletteText: element<HTMLTextAreaElement>('palette-text'),
@@ -347,6 +354,7 @@ export function start(): void {
       analysis: {
         ...DEFAULT_PIPELINE_OPTIONS.analysis,
         darkMaxLightness: preferences.darkThreshold,
+        markMinShare: preferences.markThreshold,
       },
       sort: { mode: preferences.sortMode, whiteFirst: preferences.whiteFirst, palette },
       layout: preferences.layout,
@@ -382,6 +390,7 @@ export function start(): void {
       return;
     }
     const { raster } = session;
+
     const analysed = arrangeIcons(session.grid, session.icons, options());
     const background = convertRgb(hexToRgb(preferences.backgroundHex), 'srgb', raster.space);
     const labelColor = preferences.showLabels ? labelColour(background) : undefined;
@@ -521,6 +530,8 @@ export function start(): void {
   ui.whiteFirst.checked = preferences.whiteFirst;
   ui.darkThreshold.value = String(preferences.darkThreshold);
   ui.darkOut.value = preferences.darkThreshold.toFixed(2);
+  ui.markThreshold.value = String(preferences.markThreshold);
+  ui.markOut.value = asShare(preferences.markThreshold);
   ui.background.value = preferences.backgroundHex;
   for (const input of layoutInputs) input.checked = input.value === preferences.layout;
   if (preferences.paletteText !== null) {
@@ -595,6 +606,14 @@ export function start(): void {
   });
   ui.darkThreshold.addEventListener('change', () => {
     preferences.darkThreshold = Number(ui.darkThreshold.value);
+    persist();
+    void refreshIcons();
+  });
+  ui.markThreshold.addEventListener('input', () => {
+    ui.markOut.value = asShare(Number(ui.markThreshold.value));
+  });
+  ui.markThreshold.addEventListener('change', () => {
+    preferences.markThreshold = Number(ui.markThreshold.value);
     persist();
     void refreshIcons();
   });

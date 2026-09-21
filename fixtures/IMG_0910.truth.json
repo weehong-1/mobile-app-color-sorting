@@ -1,0 +1,238 @@
+{
+  "source": "fixtures/IMG_0910.PNG",
+  "width": 1206,
+  "height": 2622,
+  "icons": [
+    {
+      "name": "SC Mobile",
+      "column": 0,
+      "row": 0,
+      "left": 94.8,
+      "top": 267.67,
+      "right": 286.21,
+      "bottom": 459.29,
+      "width": 191.41,
+      "height": 191.62
+    },
+    {
+      "name": "Authenticator",
+      "column": 1,
+      "row": 0,
+      "left": 371.79,
+      "top": 267.67,
+      "right": 563.22,
+      "bottom": 459.3,
+      "width": 191.43,
+      "height": 191.63
+    },
+    {
+      "name": "MyICA Mobile",
+      "column": 2,
+      "row": 0,
+      "left": 650.78,
+      "top": 267.67,
+      "right": 842.22,
+      "bottom": 459.29,
+      "width": 191.45,
+      "height": 191.62
+    },
+    {
+      "name": "MyNIISe",
+      "column": 3,
+      "row": 0,
+      "left": 927.72,
+      "top": 267.69,
+      "right": 1119.28,
+      "bottom": 458.35,
+      "width": 191.55,
+      "height": 190.66
+    },
+    {
+      "name": "MyPB",
+      "column": 0,
+      "row": 1,
+      "left": 94.77,
+      "top": 568.67,
+      "right": 286.23,
+      "bottom": 760.3,
+      "width": 191.47,
+      "height": 191.62
+    },
+    {
+      "name": "SP",
+      "column": 1,
+      "row": 1,
+      "left": 371.77,
+      "top": 568.67,
+      "right": 563.24,
+      "bottom": 760.32,
+      "width": 191.47,
+      "height": 191.65
+    },
+    {
+      "name": "中国移动",
+      "column": 2,
+      "row": 1,
+      "left": 650.8,
+      "top": 568.66,
+      "right": 842.26,
+      "bottom": 760.29,
+      "width": 191.45,
+      "height": 191.63
+    },
+    {
+      "name": "Great Eastern",
+      "column": 3,
+      "row": 1,
+      "left": 927.71,
+      "top": 568.68,
+      "right": 1119.29,
+      "bottom": 758.86,
+      "width": 191.58,
+      "height": 190.18
+    },
+    {
+      "name": "Healthy 365",
+      "column": 0,
+      "row": 2,
+      "left": 94.39,
+      "top": 869.8,
+      "right": 286.47,
+      "bottom": 1060.5,
+      "width": 192.08,
+      "height": 190.7
+    },
+    {
+      "name": "Donate Blood",
+      "column": 1,
+      "row": 2,
+      "left": 371.8,
+      "top": 869.67,
+      "right": 563.36,
+      "bottom": 1061.3,
+      "width": 191.56,
+      "height": 191.63
+    },
+    {
+      "name": "CPF Mobile",
+      "column": 2,
+      "row": 2,
+      "left": 651.88,
+      "top": 869.25,
+      "right": 842.38,
+      "bottom": 1059.9,
+      "width": 190.5,
+      "height": 190.65
+    },
+    {
+      "name": "Maxis",
+      "column": 3,
+      "row": 2,
+      "left": 927.96,
+      "top": 869.52,
+      "right": 1119.1,
+      "bottom": 1059.98,
+      "width": 191.14,
+      "height": 190.45
+    },
+    {
+      "name": "TNG eWallet",
+      "column": 0,
+      "row": 3,
+      "left": 94.65,
+      "top": 1171.99,
+      "right": 286.35,
+      "bottom": 1361.02,
+      "width": 191.7,
+      "height": 189.02
+    },
+    {
+      "name": "Alipay",
+      "column": 1,
+      "row": 3,
+      "left": 371.62,
+      "top": 1172.18,
+      "right": 563.39,
+      "bottom": 1361.34,
+      "width": 191.77,
+      "height": 189.16
+    },
+    {
+      "name": "Singpass",
+      "column": 2,
+      "row": 3,
+      "left": 650.58,
+      "top": 1172.18,
+      "right": 842.54,
+      "bottom": 1360.85,
+      "width": 191.96,
+      "height": 188.67
+    },
+    {
+      "name": "OCBC",
+      "column": 3,
+      "row": 3,
+      "left": 927.4,
+      "top": 1172.14,
+      "right": 1119.47,
+      "bottom": 1362.76,
+      "width": 192.07,
+      "height": 190.62
+    },
+    {
+      "name": "OCBC Business",
+      "column": 0,
+      "row": 4,
+      "left": 94.65,
+      "top": 1472.57,
+      "right": 286.35,
+      "bottom": 1662.69,
+      "width": 191.7,
+      "height": 190.12
+    },
+    {
+      "name": "AIA+",
+      "column": 1,
+      "row": 4,
+      "left": 371.65,
+      "top": 1472.3,
+      "right": 562.09,
+      "bottom": 1663,
+      "width": 190.44,
+      "height": 190.7
+    },
+    {
+      "name": "MySingtel",
+      "column": 2,
+      "row": 4,
+      "left": 651.16,
+      "top": 1471.24,
+      "right": 841.48,
+      "bottom": 1663.64,
+      "width": 190.32,
+      "height": 192.4
+    },
+    {
+      "name": "DBS digibank",
+      "column": 3,
+      "row": 4,
+      "left": 927.62,
+      "top": 1473.15,
+      "right": 1119.4,
+      "bottom": 1661.88,
+      "width": 191.78,
+      "height": 188.73
+    },
+    {
+      "name": "DBS PayLah!",
+      "column": 0,
+      "row": 5,
+      "left": 94.67,
+      "top": 1773.64,
+      "right": 286.33,
+      "bottom": 1963.86,
+      "width": 191.67,
+      "height": 190.22
+    }
+  ]
+}

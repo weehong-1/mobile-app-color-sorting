@@ -89,6 +89,35 @@ describe('extractLabel', () => {
     expect(extractLabel(raster, ICON)).toBeNull();
   });
 
+  /**
+   * IMG_0910's wallpaper has a bright edge running diagonally through some
+   * label strips. It lifts all three channels, so taking the minimum does not
+   * reject it, and it clears the soft threshold -- but only weakly. Text
+   * recovers to full strength at its stroke centres; a smear never does.
+   */
+  it('drops a bright smear that never reaches full strength', () => {
+    const raster = wallpaper(500, 500);
+    paintText(raster, 150, stripTop + 16, 6);
+    // Thin, so the block medians behind it still see the wallpaper.
+    for (let dy = 0; dy < 40; dy++) {
+      for (let dx = 0; dx < 5; dx++) {
+        const i = ((stripTop + dy) * raster.width + (300 + dx + Math.round(dy * 0.3))) * 4;
+        for (let c = 0; c < 3; c++) raster.data[i + c] = Math.min(255, raster.data[i + c]! + 58);
+      }
+    }
+
+    const label = extractLabel(raster, ICON)!;
+    const at = (x: number, y: number) =>
+      label.alpha[(y - label.bounds.y) * label.bounds.width + (x - label.bounds.x)]!;
+    let smeared = 0;
+    for (let y = stripTop; y < stripTop + 45; y++) {
+      for (let x = 295; x <= 320; x++) smeared = Math.max(smeared, at(x, y));
+    }
+
+    expect(at(150 + 4, stripTop + 16 + 8)).toBeGreaterThan(0.8);
+    expect(smeared).toBe(0);
+  });
+
   it('rejects a shadow, which darkens rather than lightens', () => {
     const raster = wallpaper(500, 500);
     for (let dy = 0; dy < 30; dy++) {
@@ -135,7 +164,43 @@ describe('contrastingText', () => {
 });
 
 describe('labels on the fixtures', () => {
-  it.each([['dense', FIXTURES.dense, 16], ['sparse', FIXTURES.sparse, 8]] as const)(
+  /**
+   * iOS centres a label under its icon, so the lit pixels reach as far left of
+   * the strip's middle as they do right of it. Anything the extractor picks up
+   * that is not the name breaks that, which is how the wallpaper edge drawn
+   * beside Alipay's name on IMG_0910 shows up as a number: 53px of text to the
+   * left of centre against 118px to the right. Worst case across the three
+   * fixtures is 4px once only solid regions are kept, and 65px without.
+   */
+  it.each([FIXTURES.dense, FIXTURES.sparse, FIXTURES.flat])(
+    'keeps every label on %s centred under its icon',
+    (path) => {
+      const analysed = analyseScreenshot(readPng(path), DEFAULT_PIPELINE_OPTIONS);
+      for (const icon of analysed.icons) {
+        const label = icon.label!;
+        const { width, height } = label.bounds;
+        let first = width;
+        let last = -1;
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            if (label.alpha[y * width + x]! <= 0.05) continue;
+            if (x < first) first = x;
+            if (x > last) last = x;
+          }
+        }
+
+        const slot = `slot ${icon.slot.column},${icon.slot.row}`;
+        expect(last, slot).toBeGreaterThan(first);
+        expect(Math.abs(width / 2 - first - (last - width / 2)), slot).toBeLessThanOrEqual(8);
+      }
+    },
+  );
+
+  it.each([
+    ['dense', FIXTURES.dense, 16],
+    ['sparse', FIXTURES.sparse, 8],
+    ['flat', FIXTURES.flat, 21],
+  ] as const)(
     'recovers a label under every icon on the %s fixture',
     (_name, path, expected) => {
       const analysed = analyseScreenshot(readPng(path), DEFAULT_PIPELINE_OPTIONS);

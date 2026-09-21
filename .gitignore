@@ -3,3 +3,5 @@ dist/
 debug/
 .DS_Store
 *.local
+.scratch/
+.env

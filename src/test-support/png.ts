@@ -111,4 +111,5 @@ export function readPng(path: string): Raster {
 export const FIXTURES = {
   dense: 'fixtures/IMG_0571.PNG',
   sparse: 'fixtures/IMG_0572.PNG',
+  flat: 'fixtures/IMG_0910.PNG',
 } as const;

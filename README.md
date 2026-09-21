@@ -46,8 +46,12 @@ This is enforced rather than promised, and you can check it:
 - Open devtools' network panel and use the app: nothing is requested after the
   page itself loads.
 
+For a while this was not true: an AI sort order talked to one host, and the
+policy named it. It was built, measured and removed, and the guarantee above is
+whole again. `docs/adr/0014` keeps the record.
+
 The only thing kept between visits is your choice of background colour, sort
-order, dark threshold and theme, in `localStorage`. No image data is stored.
+order, thresholds and theme, in `localStorage`. No image data is stored.
 
 ## How it works
 
@@ -58,18 +62,33 @@ in the browser and under Vitest against the fixture screenshots.
    Columns come from a brute-force search over left edge, icon size and pitch;
    rows from fitting a lattice to detected row bands, which is what lets a page
    with empty rows in the middle work (see `docs/adr/0005`).
-2. **Decide which slots hold icons**, by the gradient energy inside each one,
-   split where the scores most obviously separate.
+2. **Decide which slots hold icons**, by the gradient energy inside each one or
+   around its edge, whichever is stronger, split where the scores most obviously
+   separate. A flat tile has no interior detail to speak of and is recognised by
+   its outline alone (see `docs/adr/0008`).
 3. **Crop each icon** at full resolution through a rounded-corner mask, together
    with any notification badge overhanging its corner. A sprite can therefore be
    larger than the slot it came from.
 4. **Measure its colour** in OKLab: the dominant colour by area, and an accent —
    the largest genuinely coloured region that differs from it — used to order
-   icons that share a white or dark dominant.
-5. **Sort**, by one of five orders. *Rainbow, grouped* is the default;
+   icons that share a white or dark dominant. Two things beat area: a white tile
+   whose mark covers a fifth of the icon is read as that mark's colour, because
+   the white is a background rather than a choice (`docs/adr/0011`), and a
+   gradient tile, which has no largest area to speak of, is read from its
+   coloured pixels (`docs/adr/0007`).
+5. **Sort**, by one of six orders. *Tile, then mark* is the default: the tile an
+   icon sits on decides its group and the mark drawn on it decides its place
+   inside that group, so every white card sits with the other white cards and
+   the page of them runs red through blue by the logos on them
+   (`docs/adr/0016`). Marks within 15 degrees of hue count as one colour and run
+   pale to deep, because four red logos three degrees apart are one red.
+   *Rainbow, grouped* asks each icon a single question instead — what colour are
+   you? — and puts the colours in hue order, then the neutrals as one ramp from
+   white through grey to black, so a silver tile sits with the white ones rather
+   than among the blues;
    *Colour families* groups chromatic icons into the hue families of a palette
    and runs each family pale to deep, the way a printed colour chart is laid
-   out. Neutrals keep their own rules in both.
+   out. Neutrals keep their own rules in all three.
 6. **Lay out** the sorted icons: packed into a block from the top-left (the
    default), into the slots that were occupied before so the page keeps its
    shape, or sorted within each row so nothing leaves the row it started in.
@@ -146,9 +165,12 @@ Tested against two iPhone home screen screenshots, 1284×2778, four columns.
 - **iPad grids** are untested. The column count can be set up to six, but the
   detection ranges were tuned on phone screenshots.
 - **Notification badges** are found only when they overhang the icon's top-right
-  corner and are the standard red. A badge on a similarly red icon is skipped
-  rather than risk masking the whole tile.
+  corner and are the standard red. A badge on a red tile is found too, as long
+  as the tile is not the badge's own red; one that is gets skipped rather than
+  risk masking the whole tile (see `docs/adr/0009`).
 - **App names** are off by default. They are recovered from the screenshot
   rather than retyped, so a name over an unusually bright patch of wallpaper can
-  come out faint or missing. Nothing is substituted when that happens: the app
-  only ever shows real pixels from your screenshot.
+  come out faint or missing. Only strokes that recover fully are kept, which is
+  what stops a bright edge in the wallpaper being drawn as if it were part of a
+  name (see `docs/adr/0010`). Nothing is substituted when something is lost: the
+  app only ever shows real pixels from your screenshot.
